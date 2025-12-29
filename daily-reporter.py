@@ -14,8 +14,10 @@ LOG_DIR = 'Logs'
 REPORT_DIR = 'Reports'
 USER_PROFILIE_FILE = 'Prompts/user_profile.md'
 USER_TOOL_FILE = 'Prompts/user_tools.md'
+TASK_FILE = 'Prompts/task.md'
+ROLE_FILE = 'Prompts/role.md'
 
-def get_vlm_analysis(image_path, user_profile, user_tools):
+def get_vlm_analysis(image_path, user_profile, user_tools, task, role):
     """VLM を使用して画像を分析する"""
     print(f"Analyzing {image_path}...")
     
@@ -24,24 +26,13 @@ def get_vlm_analysis(image_path, user_profile, user_tools):
             img_bytes = f.read()
 
         system_prompt = f"""
-# あなたの役割
-あなたは画面のスクリーンショットを見て、ユーザがどんな作業をしているのかを監視する役割を担っています。
-システムは毎分画面のスクリーンショットを撮影します。それを見て今の作業内容を把握してそれをレポートしてください。
+{role}
 
-# ユーザプロフィール
 {user_profile}
 
-# ユーザがよく使うツール
 {user_tools}
 
-# あなたのやるべきこと
-あなたのやるべきことは、ユーザの画面キャプチャからタスクを判断し、なにをしているかをレポートすることです。
-
-## 注目ポイント
-ユーザの開いているアプリケーションを注意深く確認し、どんな作業をしているかを判断します。
-ウィンドウは複数開いていることがあるため、特に前面に来ているアプリケーションに注目します。
-
-その後、それに関連しそうなアプリケーションが開いていないかを確認し、もし関連しそうなものを開いている場合はそれを読み取ってください。
+{task}
 
 # レポートの扱い
 画像から判断されたレポートはログエントリとして出力され、その日の最後にそれらをまとめて詳細な日報を作成するために利用されます。
@@ -67,6 +58,10 @@ def create_daily_report(target_date):
             user_profile = f.read()
         with open(USER_TOOL_FILE, 'r', encoding='utf-8') as f:
             user_tools = f.read()
+        with open(TASK_FILE, 'r', encoding='utf-8') as f:
+            task = f.read()
+        with open(ROLE_FILE, 'r', encoding='utf-8') as f:
+            role = f.read()
     except FileNotFoundError as e:
         print(f"Error: {e}")
         return
@@ -87,7 +82,7 @@ def create_daily_report(target_date):
         timestamp = filename.replace('.png', '').replace('-', ':')
         filepath = os.path.join(target_dir, filename)
         
-        description = get_vlm_analysis(filepath, user_profile, user_tools)
+        description = get_vlm_analysis(filepath, user_profile, user_tools, task, role)
         log_entry = f"[{timestamp}] {description}"
         log_entries.append(log_entry)
         print(log_entry)
