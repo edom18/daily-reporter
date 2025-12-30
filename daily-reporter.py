@@ -14,10 +14,11 @@ LOG_DIR = 'Logs'
 REPORT_DIR = 'Reports'
 USER_PROFILIE_FILE = 'Prompts/user_profile.md'
 USER_TOOL_FILE = 'Prompts/user_tools.md'
-TASK_FILE = 'Prompts/task.md'
-ROLE_FILE = 'Prompts/role.md'
+TASK_FILE = 'Prompts/VLM/task.md'
+ROLE_FILE = 'Prompts/VLM/role.md'
+DAILY_REPORT_ROLE_FILE = 'Prompts/LLM/role.md'
 
-def get_vlm_analysis(image_path, user_profile, user_tools, task, role):
+def get_vlm_analysis(image_path, task, role):
     """VLM を使用して画像を分析する"""
     print(f"Analyzing {image_path}...")
     
@@ -28,15 +29,7 @@ def get_vlm_analysis(image_path, user_profile, user_tools, task, role):
         system_prompt = f"""
 {role}
 
-{user_profile}
-
-{user_tools}
-
 {task}
-
-# レポートの扱い
-画像から判断されたレポートはログエントリとして出力され、その日の最後にそれらをまとめて詳細な日報を作成するために利用されます。
-レポートの内容は日本語で記述してください。
 """
 
         user_prompt = "画像を分析してユーザがどのような作業をしているのかをレポートしてください。"
@@ -62,6 +55,8 @@ def create_daily_report(target_date):
             task = f.read()
         with open(ROLE_FILE, 'r', encoding='utf-8') as f:
             role = f.read()
+        with open(DAILY_REPORT_ROLE_FILE, 'r', encoding='utf-8') as f:
+            daily_report_role = f.read()
     except FileNotFoundError as e:
         print(f"Error: {e}")
         return
@@ -97,12 +92,12 @@ def create_daily_report(target_date):
 
     # 日報の作成
     print("Generating summary...")
-    system_prompt = """
-あなたは日報作成者です。
-日報の元になるテキストは、ユーザの画面を毎分キャプチャし、それを VLM がなにをしているかを解釈・解説したものが累積されたテキストデータです。
-その前提に立って、ユーザが今日行ったことをまとめ、日報にしてください。
-なお、VLM の性能、解釈などにより実際に行っていることと異なる可能性があります。前後の内容も含めて、可能な限り整合性を保って日報を作成してください。
-日報の内容は日本語で記述してください。
+    system_prompt = f"""
+{daily_report_role}
+
+{user_profile}
+
+{user_tools}
 """
 
     user_prompt = f"以下のテキストを日報にしてください。\n\n{full_log}"
