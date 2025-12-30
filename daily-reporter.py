@@ -77,7 +77,7 @@ def create_daily_report(target_date):
         timestamp = filename.replace('.png', '').replace('-', ':')
         filepath = os.path.join(target_dir, filename)
         
-        description = get_vlm_analysis(filepath, user_profile, user_tools, task, role)
+        description = get_vlm_analysis(filepath, task, role)
         log_entry = f"[{timestamp}] {description}"
         log_entries.append(log_entry)
         print(log_entry)
