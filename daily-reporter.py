@@ -8,7 +8,7 @@ import io
 
 # 設定
 LLM_MODEL = "gemma3:27b"
-VLM_MODEL = "qwen3-vl:8b"
+VLM_MODEL = "qwen3-vl:32b"
 SCREENSHOTS_DIR = 'Screenshots'
 LOG_DIR = 'Logs'
 REPORT_DIR = 'Reports'
@@ -18,7 +18,7 @@ TASK_FILE = 'Prompts/VLM/task.md'
 ROLE_FILE = 'Prompts/VLM/role.md'
 DAILY_REPORT_ROLE_FILE = 'Prompts/LLM/role.md'
 
-def get_vlm_analysis(image_path, task, role):
+def get_vlm_analysis(image_path, task, role, keep_alive=None):
     """VLM を使用して画像を分析する"""
     print(f"Analyzing {image_path}...")
     
@@ -37,7 +37,7 @@ def get_vlm_analysis(image_path, task, role):
         response = ollama.chat(model=VLM_MODEL, messages=[
             {'role': 'system', 'content': system_prompt},
             {'role': 'user', 'content': user_prompt, 'images': [img_bytes]}
-        ])
+        ], keep_alive=keep_alive)
         return response['message']['content']
     except Exception as e:
         return f"Error analyzing image: {str(e)}"
@@ -84,11 +84,15 @@ def create_daily_report(target_date, use_existing_log=False):
             return
         
         log_entries = []
-        for filename in screenshots:
+        for i, filename in enumerate(screenshots):
             timestamp = filename.replace('.png', '').replace('-', ':')
             filepath = os.path.join(target_dir, filename)
             
-            description = get_vlm_analysis(filepath, task, role)
+            # 最後の画像の場合はモデルをアンロードするように keep_alive=0 を指定する
+            is_last = (i == len(screenshots) - 1)
+            keep_alive = 0 if is_last else None
+
+            description = get_vlm_analysis(filepath, task, role, keep_alive=keep_alive)
             log_entry = f"[{timestamp}] {description}"
             log_entries.append(log_entry)
             print(log_entry)
