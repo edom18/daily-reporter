@@ -42,7 +42,7 @@ def get_vlm_analysis(image_path, task, role):
     except Exception as e:
         return f"Error analyzing image: {str(e)}"
 
-def create_daily_report(target_date):
+def create_daily_report(target_date, use_existing_log=False):
     print(f"Creating daily report for {target_date}...")
 
     # プロファイルとツールの読み込み
@@ -61,34 +61,44 @@ def create_daily_report(target_date):
         print(f"Error: {e}")
         return
 
-    # スクリーンショットの処理
-    target_dir = os.path.join(SCREENSHOTS_DIR, target_date)
-    if not os.path.exists(target_dir):
-        print(f"No screenshots found for {target_date} in {target_dir}")
-        return
-
-    screenshots = sorted([f for f in os.listdir(target_dir) if f.endswith('.png')])
-    if not screenshots:
-        print(f"No PNG screenshots found in {target_dir}")
-        return
-    
-    log_entries = []
-    for filename in screenshots:
-        timestamp = filename.replace('.png', '').replace('-', ':')
-        filepath = os.path.join(target_dir, filename)
-        
-        description = get_vlm_analysis(filepath, task, role)
-        log_entry = f"[{timestamp}] {description}"
-        log_entries.append(log_entry)
-        print(log_entry)
-
-    full_log = "\n\n---------------\n\n".join(log_entries)
-
-    # ログをデバッグ用に書き出しておく
+    full_log = ""
     log_filename = os.path.join(LOG_DIR, f"daily_log_{target_date}.txt")
-    with open(log_filename, "w", encoding="utf-8") as f:
-        f.write(full_log)
-    print(f"Log saved to {log_filename}")
+
+    if use_existing_log:
+        if not os.path.exists(log_filename):
+            print(f"Log file not found: {log_filename}")
+            return
+        print(f"Reading existing log from {log_filename}...")
+        with open(log_filename, "r", encoding="utf-8") as f:
+            full_log = f.read()
+    else:
+        # スクリーンショットの処理
+        target_dir = os.path.join(SCREENSHOTS_DIR, target_date)
+        if not os.path.exists(target_dir):
+            print(f"No screenshots found for {target_date} in {target_dir}")
+            return
+
+        screenshots = sorted([f for f in os.listdir(target_dir) if f.endswith('.png')])
+        if not screenshots:
+            print(f"No PNG screenshots found in {target_dir}")
+            return
+        
+        log_entries = []
+        for filename in screenshots:
+            timestamp = filename.replace('.png', '').replace('-', ':')
+            filepath = os.path.join(target_dir, filename)
+            
+            description = get_vlm_analysis(filepath, task, role)
+            log_entry = f"[{timestamp}] {description}"
+            log_entries.append(log_entry)
+            print(log_entry)
+
+        full_log = "\n\n---------------\n\n".join(log_entries)
+
+        # ログをデバッグ用に書き出しておく
+        with open(log_filename, "w", encoding="utf-8") as f:
+            f.write(full_log)
+        print(f"Log saved to {log_filename}")
 
     # 日報の作成
     print("Generating summary...")
@@ -100,7 +110,7 @@ def create_daily_report(target_date):
 {user_tools}
 """
 
-    user_prompt = f"以下のテキストを日報にしてください。\n\n{full_log}"
+    user_prompt = f"以下のテキストを日報に、かつ日本語に翻訳してください。\n\n{full_log}"
 
     try:
         response = ollama.chat(model=LLM_MODEL, messages=[
@@ -135,6 +145,7 @@ def main():
     # report コマンド
     report_parser = subparsers.add_parser("report", help="Generate a daily report for a specific date")
     report_parser.add_argument("date", nargs="?", help="Target date (YYYY-MM-DD), defaults to today")
+    report_parser.add_argument("-log", "--log", action="store_true", help="Use existing log file instead of VLM analysis")
 
     # clear コマンド
     clear_parser = subparsers.add_parser("clear", help="Clear screenshots for a specific date")
@@ -152,7 +163,7 @@ def main():
                 target_date = candidates[-1]
                 print(f"Latest directory found: {target_date}")
         
-        create_daily_report(target_date)
+        create_daily_report(target_date, use_existing_log=args.log)
     elif args.command == "clear":
         clear_screenshots(args.date)
     else:
