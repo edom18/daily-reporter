@@ -144,6 +144,14 @@ def main():
 
     if args.command == "report":
         target_date = args.date if args.date else datetime.now().strftime('%Y-%m-%d')
+        
+        # インクリメントされたディレクトリを含め、最新のものを探す
+        if not args.date:
+            candidates = sorted([d for d in os.listdir(SCREENSHOTS_DIR) if d.startswith(target_date)])
+            if candidates:
+                target_date = candidates[-1]
+                print(f"Latest directory found: {target_date}")
+        
         create_daily_report(target_date)
     elif args.command == "clear":
         clear_screenshots(args.date)
