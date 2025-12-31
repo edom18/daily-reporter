@@ -114,7 +114,7 @@ def create_daily_report(target_date, use_existing_log=False):
 {user_tools}
 """
 
-    user_prompt = f"以下のテキストを日報に、かつ日本語に翻訳してください。\n\n{full_log}"
+    user_prompt = f"以下が本日の作業内容です。\n\n{full_log}\n\n上記を必ず、日本語で日報にしてください。"
 
     try:
         response = ollama.chat(model=LLM_MODEL, messages=[
