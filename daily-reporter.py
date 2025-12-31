@@ -144,8 +144,8 @@ def main():
 
     # report コマンド
     report_parser = subparsers.add_parser("report", help="Generate a daily report for a specific date")
-    report_parser.add_argument("date", nargs="?", help="Target date (YYYY-MM-DD), defaults to today")
-    report_parser.add_argument("-log", "--log", action="store_true", help="Use existing log file instead of VLM analysis")
+    report_parser.add_argument("-d", "--date", nargs="?", help="Target date (YYYY-MM-DD), defaults to today")
+    report_parser.add_argument("-l", "--log", action="store_true", help="Use existing log file instead of VLM analysis")
 
     # clear コマンド
     clear_parser = subparsers.add_parser("clear", help="Clear screenshots for a specific date")
